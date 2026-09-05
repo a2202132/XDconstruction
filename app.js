@@ -44,6 +44,12 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || '送出失敗，請稍後再試');
     $('#reservationId').textContent = data.reservation_id || '已建立';
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'Lead', {
+        content_name: '賞屋預約表單',
+        content_category: '鄉民首贏'
+      });
+    }
     form.reset();
     successDialog.showModal();
   } catch (err) {
