@@ -5,6 +5,8 @@ Env:
   PORT=8080
   HOST=0.0.0.0
   RESERVATION_WEBHOOK_URL=https://...   # optional: forward each lead to Make/Zapier/Apps Script/CRM
+  LINE_CHANNEL_ACCESS_TOKEN=...          # optional: LINE Messaging API long-lived token
+  LINE_USER_ID=U...                      # optional: recipient's LINE user ID
 """
 from __future__ import annotations
 import csv, json, os, re, secrets, sqlite3, threading
@@ -45,6 +47,31 @@ def forward_webhook(row):
     req = Request(url, data=body, headers={"Content-Type":"application/json"}, method="POST")
     result = json.loads(urlopen(req, timeout=12).read(4096).decode("utf-8"))
     if result.get("ok") is not True: raise RuntimeError(result.get("error") or "Google Sheet 寫入失敗")
+    return True
+
+def notify_line(row):
+    token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
+    user_id = os.environ.get("LINE_USER_ID", "").strip()
+    if not token or not user_id: return False
+    appointment = " ".join(filter(None, [row.get("preferred_date"), row.get("preferred_time")])) or "未填寫"
+    message = "\n".join([
+        "新預約通知",
+        f"姓名：{row['name']}",
+        f"電話：{row['phone']}",
+        f"預計預約時間：{appointment}",
+    ])
+    body = json.dumps({
+        "to": user_id,
+        "messages": [{"type": "text", "text": message}],
+    }, ensure_ascii=False).encode("utf-8")
+    req = Request(
+        "https://api.line.me/v2/bot/message/push",
+        data=body,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    with urlopen(req, timeout=12) as response:
+        if response.status != 200: raise RuntimeError(f"LINE API 回傳 HTTP {response.status}")
     return True
 
 class Handler(SimpleHTTPRequestHandler):
@@ -89,6 +116,11 @@ class Handler(SimpleHTTPRequestHandler):
                 con.execute("INSERT INTO reservations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [row[k] for k in FIELDS])
             with CSV.open("a", newline="", encoding="utf-8-sig") as f: csv.DictWriter(f, fieldnames=FIELDS).writerow(row)
         if not forwarded: print("[storage warning] RESERVATION_WEBHOOK_URL is not configured; using ephemeral local storage only")
+        try:
+            if not notify_line(row): print("[notification warning] LINE notification is not configured")
+        except Exception as exc:
+            # The reservation is already safely stored, so a transient LINE error must not lose the lead.
+            print("[LINE notification error]", exc)
         print(f"[NEW LEAD] {rid} {name} {phone} {unit}")
         return self.json_response(201,{"ok":True,"reservation_id":rid})
     def json_response(self, status, obj):
