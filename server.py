@@ -6,10 +6,12 @@ Env:
   HOST=0.0.0.0
   RESERVATION_WEBHOOK_URL=https://...   # optional: forward each lead to Make/Zapier/Apps Script/CRM
   LINE_CHANNEL_ACCESS_TOKEN=...          # optional: LINE Messaging API long-lived token
-  LINE_USER_ID=U...                      # optional: recipient's LINE user ID
+  LINE_USER_ID=U...                      # optional: fallback recipient's LINE user ID
+  LINE_TARGET_ID=C...                    # optional: group ID; takes priority over LINE_USER_ID
+  LINE_CHANNEL_SECRET=...                # required only for receiving LINE webhook events
 """
 from __future__ import annotations
-import csv, json, os, re, secrets, sqlite3, threading
+import base64, csv, hashlib, hmac, json, os, re, secrets, sqlite3, threading
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -51,8 +53,8 @@ def forward_webhook(row):
 
 def notify_line(row):
     token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
-    user_id = os.environ.get("LINE_USER_ID", "").strip()
-    if not token or not user_id: return False
+    target_id = os.environ.get("LINE_TARGET_ID", "").strip() or os.environ.get("LINE_USER_ID", "").strip()
+    if not token or not target_id: return False
     appointment = " ".join(filter(None, [row.get("preferred_date"), row.get("preferred_time")])) or "未填寫"
     message = "\n".join([
         "新預約通知",
@@ -61,7 +63,7 @@ def notify_line(row):
         f"預計預約時間：{appointment}",
     ])
     body = json.dumps({
-        "to": user_id,
+        "to": target_id,
         "messages": [{"type": "text", "text": message}],
     }, ensure_ascii=False).encode("utf-8")
     req = Request(
@@ -73,6 +75,12 @@ def notify_line(row):
     with urlopen(req, timeout=12) as response:
         if response.status != 200: raise RuntimeError(f"LINE API 回傳 HTTP {response.status}")
     return True
+
+def valid_line_signature(body, signature):
+    secret = os.environ.get("LINE_CHANNEL_SECRET", "").strip()
+    if not secret or not signature: return False
+    expected = base64.b64encode(hmac.new(secret.encode("utf-8"), body, hashlib.sha256).digest()).decode("ascii")
+    return hmac.compare_digest(expected, signature)
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs): super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -88,6 +96,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/health": return self.json_response(200,{"ok":True})
         return super().do_GET()
     def do_POST(self):
+        if self.path == "/api/line/webhook": return self.line_webhook()
         if self.path != "/api/reservations": return self.json_response(404,{"error":"Not found"})
         try:
             length = int(self.headers.get("Content-Length","0"))
@@ -123,6 +132,22 @@ class Handler(SimpleHTTPRequestHandler):
             print("[LINE notification error]", exc)
         print(f"[NEW LEAD] {rid} {name} {phone} {unit}")
         return self.json_response(201,{"ok":True,"reservation_id":rid})
+    def line_webhook(self):
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if length <= 0 or length > 100000: return self.json_response(400,{"error":"Invalid request"})
+            body = self.rfile.read(length)
+            if not valid_line_signature(body, self.headers.get("X-Line-Signature", "")):
+                return self.json_response(401,{"error":"Invalid signature"})
+            payload = json.loads(body.decode("utf-8"))
+            for event in payload.get("events", []):
+                source = event.get("source", {})
+                if source.get("type") == "group" and source.get("groupId"):
+                    print(f"[LINE GROUP ID] {source['groupId']}", flush=True)
+            return self.json_response(200,{"ok":True})
+        except Exception as exc:
+            print("[LINE webhook error]", exc, flush=True)
+            return self.json_response(400,{"error":"Invalid request"})
     def json_response(self, status, obj):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status); self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Content-Length",str(len(body))); self.end_headers(); self.wfile.write(body)
