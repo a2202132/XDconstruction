@@ -38,13 +38,14 @@ def make_id(): return "SY-" + datetime.now().strftime("%Y%m%d-%H%M%S-") + secret
 
 def forward_webhook(row):
     url = os.environ.get("RESERVATION_WEBHOOK_URL", "").strip()
-    if not url: return
-    try:
-        body = json.dumps(row, ensure_ascii=False).encode("utf-8")
-        req = Request(url, data=body, headers={"Content-Type":"application/json"}, method="POST")
-        urlopen(req, timeout=5).read(64)
-    except Exception as exc:
-        print("[webhook warning]", exc)
+    if not url: return False
+    payload = dict(row)
+    payload["webhook_secret"] = os.environ.get("RESERVATION_WEBHOOK_SECRET", "")
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = Request(url, data=body, headers={"Content-Type":"application/json"}, method="POST")
+    result = json.loads(urlopen(req, timeout=12).read(4096).decode("utf-8"))
+    if result.get("ok") is not True: raise RuntimeError(result.get("error") or "Google Sheet 寫入失敗")
+    return True
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs): super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -78,11 +79,16 @@ class Handler(SimpleHTTPRequestHandler):
             "purpose":clean(data.get("purpose"),40),"note":clean(data.get("note"),500),"source":clean(data.get("source"),100),
             "page":clean(data.get("page"),500),"ip":clean(self.client_address[0],80),"user_agent":clean(self.headers.get("User-Agent"),300)
         }
+        try:
+            forwarded = forward_webhook(row)
+        except Exception as exc:
+            print("[webhook error]", exc)
+            return self.json_response(503,{"error":"預約資料暫時無法安全保存，請稍後再試或直接來電"})
         with LOCK:
             with sqlite3.connect(DB) as con:
                 con.execute("INSERT INTO reservations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [row[k] for k in FIELDS])
             with CSV.open("a", newline="", encoding="utf-8-sig") as f: csv.DictWriter(f, fieldnames=FIELDS).writerow(row)
-        threading.Thread(target=forward_webhook, args=(row,), daemon=True).start()
+        if not forwarded: print("[storage warning] RESERVATION_WEBHOOK_URL is not configured; using ephemeral local storage only")
         print(f"[NEW LEAD] {rid} {name} {phone} {unit}")
         return self.json_response(201,{"ok":True,"reservation_id":rid})
     def json_response(self, status, obj):
