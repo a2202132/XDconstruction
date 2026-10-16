@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#17352d" />
   <meta name="description" content="鄉民首贏｜新竹東區稀有小坪數電梯華廈，15.64坪標準兩房、21.13坪收租雙套房，總價1188萬起。線上預約賞屋。" />
-  <title>鄉民首贏｜1188萬起・竹科學區小宅｜20260904最新版</title>
+  <title>鄉民首贏｜1188萬起・竹科學區小宅｜20261016最新版</title>
   <!-- Meta Pixel Code -->
   <script>
     !function(f,b,e,v,n,t,s)
@@ -37,7 +37,7 @@
       <a href="#plans">房型格局</a>
       <a href="#materials">建材設備</a>
       <a href="#location">地段學區</a>
-      <a class="nav-cta" href="#reserve">立即預約</a>
+      <a class="nav-cta" href="#reserve">索取格局價目</a>
     </nav>
     <a class="header-phone" href="tel:0916882564">0916882564 王小姐</a>
   </header>
@@ -51,7 +51,7 @@
         <h1>幫孩子贏在人生的起跑點<br><span>也替資產先贏一步</span></h1>
         <p class="hero-lead">15.64坪標準兩房｜21.13坪收租雙套房<br>公設比僅 28.8%，總價 <strong>1188萬起</strong></p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#reserve">立即預約賞屋</a>
+          <a class="btn btn-primary" href="#reserve">免費索取格局與價目</a>
           <a class="btn btn-ghost" href="tel:0916882564">撥打賞屋專線</a>
         </div>
         <div class="hero-trust">
@@ -245,13 +245,13 @@
       <div class="wrap reserve-grid">
         <div class="reserve-copy">
           <p class="kicker">RESERVATION</p>
-          <h2>立即預約賞屋</h2>
-          <p>填完約 30 秒。送出後系統會立即產生預約編號，我們再與您確認確切賞屋時段。</p>
-          <div class="reserve-badges"><span>✓ 不收預約費</span><span>✓ 可指定房型</span><span>✓ 手機即可完成</span></div>
+          <h2>免費索取格局與價目</h2>
+          <p>先留下姓名、手機與意向房型即可；預約日期與其他需求可選填。我們會提供建案資料並與您確認是否需要安排賞屋。</p>
+          <div class="reserve-badges"><span>✓ 不收預約費</span><span>✓ 可先索取資料</span><span>✓ 約 20 秒完成</span></div>
           <div class="legal-note"><strong>重要說明</strong><p>此表單為賞屋／購屋意向預約，不構成不動產買賣契約、定金或付款承諾。正式交易條件以雙方簽署之書面契約為準。</p></div>
         </div>
         <form id="reservationForm" class="reservation-form" novalidate>
-          <div class="form-title">購屋預約單</div>
+          <div class="form-title">索取建案資料</div>
           <label>姓名<span>*</span><input name="name" autocomplete="name" required maxlength="40" placeholder="請輸入姓名"></label>
           <label>手機<span>*</span><input name="phone" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="09xx-xxx-xxx"></label>
           <label>想看的房型<span>*</span>
@@ -263,14 +263,19 @@
               <option>先了解總價與付款方式</option>
             </select>
           </label>
-          <div class="two-col">
-            <label>希望日期<input name="preferred_date" type="date"></label>
-            <label>希望時段<select name="preferred_time"><option value="">皆可</option><option>09:00–12:00</option><option>12:00–15:00</option><option>15:00–18:00</option><option>18:00 以後</option></select></label>
-          </div>
-          <label>目前需求<select name="purpose"><option>自住</option><option>置產收租</option><option>首購</option><option>替家人購屋</option><option>先了解</option></select></label>
-          <label>備註<textarea name="note" rows="3" maxlength="500" placeholder="例如：想先了解可售樓層、付款方式、車位等"></textarea></label>
+          <details class="optional-fields">
+            <summary>預約時間與其他需求（選填）</summary>
+            <div class="optional-fields-body">
+              <div class="two-col">
+                <label>希望日期<input name="preferred_date" type="date"></label>
+                <label>希望時段<select name="preferred_time"><option value="">皆可</option><option>09:00–12:00</option><option>12:00–15:00</option><option>15:00–18:00</option><option>18:00 以後</option></select></label>
+              </div>
+              <label>目前需求<select name="purpose"><option>先了解</option><option>自住</option><option>置產收租</option><option>首購</option><option>替家人購屋</option></select></label>
+              <label>備註<textarea name="note" rows="3" maxlength="500" placeholder="例如：想先了解可售樓層、付款方式、車位等"></textarea></label>
+            </div>
+          </details>
           <label class="consent"><input type="checkbox" name="consent" required><span>我同意提供以上資料供鄉民建設聯繫本次賞屋／購屋諮詢使用。*</span></label>
-          <button class="btn btn-primary submit-btn" type="submit"><span class="submit-text">送出預約單</span><span class="spinner" hidden></span></button>
+          <button class="btn btn-primary submit-btn" type="submit"><span class="submit-text">免費索取建案資料</span><span class="spinner" hidden></span></button>
           <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
           <a class="form-phone" href="tel:0916882564">不想填表？直接撥 0916882564 王小姐</a>
         </form>
@@ -293,16 +298,16 @@
       <div><a href="tel:0916882564">預約專線 0916882564 王小姐</a><p>新竹市光復路一段531巷7-11對面</p></div>
     </div>
     <div class="footer-note wrap">本網站圖片含建築外觀及家具配置示意，實際內容依核准圖說、現場施工與正式買賣契約為準。學區資格以主管機關及學校最新公告為準。</div>
-  <div style="display:none" id="buildVersion">REAL_FIX_20260904</div></footer>
+  <div style="display:none" id="buildVersion">LEAD_FIX_20261016</div></footer>
 
   <div class="mobile-cta" aria-label="快速聯絡">
-    <a href="tel:0916882564">電話詢問</a><a href="#reserve">立即預約</a>
+    <a href="tel:0916882564">電話詢問</a><a href="#reserve">索取格局價目</a>
   </div>
 
   <dialog id="imageDialog" class="image-dialog"><button class="dialog-close" aria-label="關閉">×</button><img alt="放大圖片"></dialog>
   <dialog id="successDialog" class="success-dialog">
     <button class="dialog-close" aria-label="關閉">×</button>
-    <div class="success-icon">✓</div><h3>預約單已送出</h3><p>您的預約編號</p><strong id="reservationId">—</strong><p>我們會依您留下的電話聯繫確認。</p>
+    <div class="success-icon">✓</div><h3>資料申請已送出</h3><p>您的申請編號</p><strong id="reservationId">—</strong><p>我們會依您留下的電話提供建案資料，並確認是否需要安排賞屋。</p>
     <a class="btn btn-primary" href="tel:0916882564">需要現在確認？直接來電</a>
   </dialog>
 
